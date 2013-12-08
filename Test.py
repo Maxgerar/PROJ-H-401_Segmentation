@@ -64,6 +64,7 @@ class ImgSegmentation:
         centre1 = self.props[indice].centroid
         mean1 = self.props[indice].mean_intensity
         self.color_pixel(self.props[indice].coords)
+        self.colored_pixel_label.append(self.props[indice].label)
         
         for elem in liste:
             #calcul de distance entre les centroides des superpixels
@@ -81,7 +82,7 @@ class ImgSegmentation:
                if mean <=15:
             #on colorie le superpixel teste
                   self.color_pixel(elem.coords)
-
+                  self.colored_pixel_label.append(elem.label)
                #on recupere l'indice du superpixel dans la liste props
                   index = (elem.label)-1
                 #on retire le superpixel colorie de la liste
@@ -96,6 +97,20 @@ class ImgSegmentation:
             self.img[row[0],row[1],2]=25
 
 
+    #recolorie le dernier pixel colorie dans sa couleur d'origine
+    def on_key(self,event):
+        print "coucou"
+#        if event.key=="q":
+#           im_origin = img_as_float(self.img_temp)
+#           pix_label = self.colored_pixel_label.pop()
+#           coords = self.props[pix_label-1]
+#           for row in coords:
+#               self.img[row[0],row[1],0]= im_origin[row[0],row[1],0]
+#               self.img[row[0],row[1],1]= im_origin[row[0],row[1],1]
+#               self.img[row[0],row[1],2]= im_origin[row[0],row[1],2]
+#           #mise a jour de l'image
+#           self.obj.set_data(mark_boundaries(self.img,self.segments_slic))
+#           plt.draw()
 
     def segmente(self):
     
@@ -110,8 +125,8 @@ class ImgSegmentation:
         self.im_red = im[600:2300:2,1100:3000:2]
         
         # slic attend une image rgb il faut donc faire la conversion
-        img_temp = gray2rgb(self.im_red)
-        self.img = img_as_float(img_temp)
+        self.img_temp = gray2rgb(self.im_red)
+        self.img = img_as_float(self.img_temp)
 
         #segmentation en superpixel
         self.segments_slic = slic(self.img,n_segments = self.segments,compactness = self.compacite, sigma =1)
@@ -122,7 +137,8 @@ class ImgSegmentation:
         
         # liste de proprietes par superpixel
         self.props = regionprops(self.segments_slic,intensity_image = self.im_red)
-
+        #liste qui permettra de stocker les labels superpixel qui ont ete colore
+        self.colored_pixel_label = list()
 
         #probleme dans la segmentation des superpixels apparamment differents porte le mm label. Demander a Mr debeir
         
@@ -138,7 +154,10 @@ class ImgSegmentation:
             
         # Liaison de click avec la fonction onclick
         self.fig = plt.figure('segmentation')
-        self.cid = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        
+        #liaison avec 'q' pour annuler ce qu'a fait le clic de souris
+        cid2 = self.fig.canvas.mpl_connect('key_press_event',self.on_key)
                 
         #Affichage
         self.affichage(mark_boundaries(self.img,self.segments_slic))
