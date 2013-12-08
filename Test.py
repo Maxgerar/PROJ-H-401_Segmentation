@@ -32,8 +32,9 @@ class ImgSegmentation:
         #identification du superpixel
         
         superpixel = self.segments_slic[event.ydata,event.xdata]
-        pix_liste = self.props
-        self.color(superpixel-1,pix_liste)
+        pix_liste = copy.deepcopy(self.props)
+        print pix_liste[0].label
+        #self.color(superpixel-1,pix_liste)
         
         
 #        print self.props[superpixel-1].mean_intensity
@@ -83,6 +84,9 @@ class ImgSegmentation:
                       self.img[row[0],row[1],0]=30
                       self.img[row[0],row[1],1]=144
                       self.img[row[0],row[1],2]=255
+                    
+
+
 #                #on recupere l'indice du superpixel dans le liste
 #                  index = (elem.label)-1
 #                #on retire le superpixel colorie de la liste
