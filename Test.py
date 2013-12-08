@@ -32,9 +32,9 @@ class ImgSegmentation:
         #identification du superpixel
         
         superpixel = self.segments_slic[event.ydata,event.xdata]
-        pix_liste = copy.deepcopy(self.props)
-        print pix_liste[0].label
-        #self.color(superpixel-1,pix_liste)
+        pix_liste = list(self.props)
+        #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+        self.color_expand(superpixel-1,pix_liste)
         
         
 #        print self.props[superpixel-1].mean_intensity
@@ -58,12 +58,12 @@ class ImgSegmentation:
     
     
     #fonction recursive qui va colorier l'elem designe par l'utilisateur
-    def color(self,indice,liste):
+    def color_expand(self,indice,liste):
         
-        #param du superpixel choisi par l'utilisateur
+        #param du superpixel dont on etudie le voisinage
         centre1 = self.props[indice].centroid
         mean1 = self.props[indice].mean_intensity
-        
+        self.color_pixel(self.props[indice].coords)
         
         for elem in liste:
             #calcul de distance entre les centroides des superpixels
@@ -80,21 +80,20 @@ class ImgSegmentation:
               
                if mean <=15:
             #on colorie le superpixel teste
-                  for row in elem.coords:
-                      self.img[row[0],row[1],0]=30
-                      self.img[row[0],row[1],1]=144
-                      self.img[row[0],row[1],2]=255
-                    
+                  self.color_pixel(elem.coords)
 
+               #on recupere l'indice du superpixel dans la liste props
+                  index = (elem.label)-1
+                #on retire le superpixel colorie de la liste
+                  liste.pop(liste.index(elem))
+                #on rapelle la methode sur la liste
+                  self.color_expand(index,liste)
 
-#                #on recupere l'indice du superpixel dans le liste
-#                  index = (elem.label)-1
-#                #on retire le superpixel colorie de la liste
-#                  liste_red = copy.deepcopy(liste)
-#                  liste_red = liste_red.pop(liste.index(elem))
-#                #on rapelle la methode sur la liste
-#                  self.color(index,liste_red)
-
+    def color_pixel(self,coords):
+        for row in coords:
+            self.img[row[0],row[1],0]=30
+            self.img[row[0],row[1],1]=144
+            self.img[row[0],row[1],2]=25
 
 
 
@@ -105,7 +104,7 @@ class ImgSegmentation:
         
         #on filtre pour enlever le bruit et avant d'echantillonner pour eviter l'aliasing
         #plus le rayon du disque est important plus le lissage est efficace
-        #im = rank.median(im,disk(8))
+        im = rank.median(im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
         self.im_red = im[600:2300:2,1100:3000:2]
@@ -123,15 +122,9 @@ class ImgSegmentation:
         
         # liste de proprietes par superpixel
         self.props = regionprops(self.segments_slic,intensity_image = self.im_red)
-        print type(self.props[0])
 
-            
-        #Test mettre tout le pixel "1" en bleu
-#        for row in self.props[2].coords:
-#            self.img[row[0],row[1],0]=30
-#            self.img[row[0],row[1],1]=144
-#            self.img[row[0],row[1],2]=255
-            #probleme dans la segmentation des superpixels apparamment differents porte le mm label. Demander a Mr debeir
+
+        #probleme dans la segmentation des superpixels apparamment differents porte le mm label. Demander a Mr debeir
         
         #Test pour enlever les superpixel trop petits
         #voir avec regionprops dans measure de skimage donne les diff area et coord-> elimniation facile !
