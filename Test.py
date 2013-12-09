@@ -29,12 +29,25 @@ class ImgSegmentation:
         
         #on veut changer la couleur du superpixel sur lequel on vient de cliquer
         
-        #identification du superpixel
-        
+        #identification du superpixel clicke
         superpixel = self.segments_slic[event.ydata,event.xdata]
-        pix_liste = list(self.props)
-        #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
-        self.color_expand(superpixel-1,pix_liste)
+        
+        # si le pixel a deja ete colorie on le decolorie
+        if self.props[superpixel-1].label in self.colored_pixel_label:
+           image = img_as_float(self.img_temp)
+            # on le retire de la liste des pixel colorie
+           self.colored_pixel_label.remove(self.props[superpixel-1].label)
+            #on decolorie le superpixel
+            #on recupere les donnees d'origine
+           for row in self.props[superpixel-1].coords:
+               self.img[row[0],row[1],0]=image[row[0],row[1],0]
+               self.img[row[0],row[1],1]=image[row[0],row[1],1]
+               self.img[row[0],row[1],2]=image[row[0],row[1],2]
+        #sinon on le colorie lui et c'est voisins
+        else:
+            pix_liste = list(self.props)
+            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+            self.color_expand(superpixel-1,pix_liste)
         
         
 #        print self.props[superpixel-1].mean_intensity
@@ -82,6 +95,7 @@ class ImgSegmentation:
                if mean <=15:
             #on colorie le superpixel teste
                   self.color_pixel(elem.coords)
+            #on indique dans une liste qu'on a colorie ce superpixel
                   self.colored_pixel_label.append(elem.label)
                #on recupere l'indice du superpixel dans la liste props
                   index = (elem.label)-1
@@ -97,20 +111,6 @@ class ImgSegmentation:
             self.img[row[0],row[1],2]=25
 
 
-    #recolorie le dernier pixel colorie dans sa couleur d'origine
-    def on_key(self,event):
-        print "coucou"
-#        if event.key=="q":
-#           im_origin = img_as_float(self.img_temp)
-#           pix_label = self.colored_pixel_label.pop()
-#           coords = self.props[pix_label-1]
-#           for row in coords:
-#               self.img[row[0],row[1],0]= im_origin[row[0],row[1],0]
-#               self.img[row[0],row[1],1]= im_origin[row[0],row[1],1]
-#               self.img[row[0],row[1],2]= im_origin[row[0],row[1],2]
-#           #mise a jour de l'image
-#           self.obj.set_data(mark_boundaries(self.img,self.segments_slic))
-#           plt.draw()
 
     def segmente(self):
     
@@ -137,6 +137,7 @@ class ImgSegmentation:
         
         # liste de proprietes par superpixel
         self.props = regionprops(self.segments_slic,intensity_image = self.im_red)
+        
         #liste qui permettra de stocker les labels superpixel qui ont ete colore
         self.colored_pixel_label = list()
 
@@ -156,8 +157,6 @@ class ImgSegmentation:
         self.fig = plt.figure('segmentation')
         cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         
-        #liaison avec 'q' pour annuler ce qu'a fait le clic de souris
-        cid2 = self.fig.canvas.mpl_connect('key_press_event',self.on_key)
                 
         #Affichage
         self.affichage(mark_boundaries(self.img,self.segments_slic))
