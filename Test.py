@@ -118,7 +118,7 @@ class ImgSegmentation:
         im = imread(self.name)
         
         #on filtre pour enlever le bruit et avant d'echantillonner pour eviter l'aliasing
-        #plus le rayon du disque est important plus le lissage est efficace
+        #plus le rayon du disque est important plus le lissage est fort
         im = rank.median(im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
@@ -165,6 +165,9 @@ class ImgSegmentation:
         #ligne pour reinitialiser
         self.obj = plt.imshow(image)
         plt.show()
+
+    def clustering(self):
+        
 
 #    def original(self):
 #        #lecture de l'image vers un ndarray
