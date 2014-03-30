@@ -17,7 +17,7 @@ import copy
 
 class ImgSegmentation:
    
-    
+    # constructeur
     def __init__(self,fname):
         self.name = fname
         self.segments = 1000; # segmentation assez fine
@@ -70,6 +70,8 @@ class ImgSegmentation:
         plt.draw()
     
     
+    
+    
     #fonction recursive qui va colorier l'elem designe par l'utilisateur
     def color_expand(self,indice,liste):
         
@@ -103,6 +105,8 @@ class ImgSegmentation:
                   liste.pop(liste.index(elem))
                 #on rapelle la methode sur la liste
                   self.color_expand(index,liste)
+
+
 
     def color_pixel(self,coords):
         for row in coords:
@@ -161,12 +165,20 @@ class ImgSegmentation:
         #Affichage
         self.affichage(mark_boundaries(self.img,self.segments_slic))
 
+
+
     def affichage(self,image):
         #ligne pour reinitialiser
         self.obj = plt.imshow(image)
         plt.show()
 
+
+    #fonction qui va permettre de regrouper les superpixels en un plus petit nombre de clusters qui seront facilement coloriable
     def clustering(self):
+    
+
+    # fonction realisant une série de statistiques sur chaque superpixel
+    def statistiques(self):
         
 
 #    def original(self):
