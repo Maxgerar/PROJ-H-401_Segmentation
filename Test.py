@@ -19,9 +19,69 @@ class ImgSegmentation:
    
     # constructeur
     def __init__(self,fname):
+        
+        #image a charger
         self.name = fname
+        
+        #parametre de la segmentation
         self.segments = 1000; # segmentation assez fine
         self.compacite = 20.0 # pour avoir des pixels plus ou moins homog, on donne autant de poids a la couleur qu'au caract spatial
+    
+    
+    def segmente(self):
+        
+        #lecture de l'image vers un ndarray
+        im = imread(self.name)
+        
+        #on filtre pour enlever le bruit et avant d'echantillonner pour eviter le repliement spectral
+        #plus le rayon du disque est important plus le lissage est fort
+        im = rank.median(im,disk(8))
+        
+        #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
+        self.im_red = im[1000:2300:2,1100:3000:2]
+        
+        # slic attend une image rgb il faut donc faire la conversion
+        # cette fonction attend egalement des valeurs d'inteniste en float
+        self.img_temp = gray2rgb(self.im_red)
+        self.img = img_as_float(self.img_temp)
+        
+        #segmentation en superpixel
+        self.segments_slic = slic(self.img,n_segments = self.segments,compactness = self.compacite, sigma =1)
+        
+        #on doit avoir tous les indices sup a 0 pour region props donc on les augmente tous de 1
+        self.segments_slic = self.segments_slic + np.ones(self.segments_slic.shape,dtype = np.int64)
+        
+        
+        # liste de proprietes par superpixel
+        self.props = regionprops(self.segments_slic,intensity_image = self.im_red)
+        # on crer une liste python apd de regioprops
+        self.pix_liste = list(self.props)
+        print len(self.pix_liste)
+        
+        #liste qui permettra de stocker les labels des superpixel qui ont ete colore
+        self.colored_pixel_label = list()
+        
+        #probleme dans la segmentation des superpixels apparamment differents porte le mm label. Demander a Mr debeir
+        
+        #Test pour enlever les superpixel trop petits
+        #voir avec regionprops dans measure de skimage donne les diff area et coord-> elimniation facile !
+        #        for i in range(len(props)):
+        #            if props[i].area <2000:
+        #            #il faut trouver comment supprimer des superpixels trop petits-> les inclure dans les plus gros mais comment savoir lequel
+        #               for row in props[i].coords:
+        #                   segments_slic[row[0],row[1]] = -1
+        
+        
+        
+        # Liaison de click avec la fonction onclick
+        self.fig = plt.figure('segmentation')
+        cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        
+        
+        #Affichage
+        self.affichage(mark_boundaries(self.img,self.segments_slic))
+    
+    
     
     #fonction a lancer si clic de souris
     def onclick(self,event):
@@ -29,7 +89,7 @@ class ImgSegmentation:
         
         #on veut changer la couleur du superpixel sur lequel on vient de cliquer
         
-        #identification du superpixel clicke
+#        #identification du superpixel clicke
         superpixel = self.segments_slic[event.ydata,event.xdata]
         
         # si le pixel a deja ete colorie on le decolorie
@@ -45,31 +105,29 @@ class ImgSegmentation:
                self.img[row[0],row[1],2]=image[row[0],row[1],2]
         #sinon on le colorie lui et c'est voisins
         else:
-            pix_liste = list(self.props)
+            
             #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
-            self.color_expand(superpixel-1,pix_liste)
-        
-        
-#        print self.props[superpixel-1].mean_intensity
+            self.color_expand(superpixel-1,self.pix_liste)
+    
+        #affichage des statistiques sur le superpixel clique
+#        print median(self.props[superpixel-1].coords)
+#        print std_dev(self.props[superpixel-1].coords)
 #        print self.props[superpixel-1].label
+#        print self.props[superpixel-1].mean_intensity
+#        print self.mediane(self.props[superpixel-1].coords)
+#        print self.std_dev(self.props[superpixel-1].coords)
 #        print self.props[superpixel-1].centroid
+    
         
-        
-        #coloriage d'un superpixel
-        #ensuite, grace a region props, on trouve l'ensembre des pixels formant ce superpixel
-        #en n'oubliant pas que le num de regioprops commence a zero alors que celle des superpixel commence a 1
-#        for row in self.props[superpixel-1].coords:
-#            self.img[row[0],row[1],0]=30
-#            self.img[row[0],row[1],1]=144
-#            self.img[row[0],row[1],2]=255
-        
-        
+
+        #en n'oubliant pas que la num de regioprops commence a zero alors que celle des superpixel commence a 1
+
         
         #on met a jour les changements
         self.obj.set_data(mark_boundaries(self.img,self.segments_slic))
         plt.draw()
     
-    
+
     
     
     #fonction recursive qui va colorier l'elem designe par l'utilisateur
@@ -77,7 +135,7 @@ class ImgSegmentation:
         
         #param du superpixel dont on etudie le voisinage
         centre1 = self.props[indice].centroid
-        mean1 = self.props[indice].mean_intensity
+        mediane1 = self.mediane(self.props[indice].coords)
         self.color_pixel(self.props[indice].coords)
         self.colored_pixel_label.append(self.props[indice].label)
         
@@ -89,12 +147,12 @@ class ImgSegmentation:
             # Test pour savoir si les superpixels sont voisins
             if distance <=30:
                
-            #maintenant on test la similarite en intensite
+            #maintenant on test la similarite en intensite via les mediane de distrib d'intensite des superpixels
                
-               mean2 = elem.mean_intensity
-               mean = math.fabs(mean1-mean2)
+               mediane2 = self.mediane(elem.coords)
+               diff = math.fabs(mediane1-mediane2)
               
-               if mean <=15:
+               if diff <=15:
             #on colorie le superpixel teste
                   self.color_pixel(elem.coords)
             #on indique dans une liste qu'on a colorie ce superpixel
@@ -108,77 +166,45 @@ class ImgSegmentation:
 
 
 
+    def affichage(self,image):
+        #ligne pour reinitialiser
+        self.obj = plt.imshow(image)
+        plt.show()
+    
+    
+    
     def color_pixel(self,coords):
         for row in coords:
             self.img[row[0],row[1],0]=30
             self.img[row[0],row[1],1]=144
             self.img[row[0],row[1],2]=25
 
+    #serie de fonctions pour effectuer des staistiques sur les superpixels
+
+    def std_dev(self,coords):
+        points = np.zeros(0)
+        for row in coords:
+            points= np.append(points,self.im_red[row[0],row[1]])
+        return np.std(points)
+
+#fonction permettant de calculer la mediane de la distribution d'intensite sur le superpixel
+    def mediane(self,coords):
+        points = np.zeros(0)
+        for row in coords:
+            points=np.append(points,self.im_red[row[0],row[1]])
+        return np.median(points)
 
 
-    def segmente(self):
-    
-        #lecture de l'image vers un ndarray
-        im = imread(self.name)
-        
-        #on filtre pour enlever le bruit et avant d'echantillonner pour eviter l'aliasing
-        #plus le rayon du disque est important plus le lissage est fort
-        im = rank.median(im,disk(8))
-        
-        #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
-        self.im_red = im[600:2300:2,1100:3000:2]
-        
-        # slic attend une image rgb il faut donc faire la conversion
-        self.img_temp = gray2rgb(self.im_red)
-        self.img = img_as_float(self.img_temp)
-
-        #segmentation en superpixel
-        self.segments_slic = slic(self.img,n_segments = self.segments,compactness = self.compacite, sigma =1)
-        
-        #on doit avoir tous les indices sup a 0 pour region props donc on les augmente tous de 1
-        self.segments_slic = self.segments_slic + np.ones(self.segments_slic.shape,dtype = np.int64)
-        
-        
-        # liste de proprietes par superpixel
-        self.props = regionprops(self.segments_slic,intensity_image = self.im_red)
-        
-        #liste qui permettra de stocker les labels superpixel qui ont ete colore
-        self.colored_pixel_label = list()
-
-        #probleme dans la segmentation des superpixels apparamment differents porte le mm label. Demander a Mr debeir
-        
-        #Test pour enlever les superpixel trop petits
-        #voir avec regionprops dans measure de skimage donne les diff area et coord-> elimniation facile !
-#        for i in range(len(props)):
-#            if props[i].area <2000:
-#            #il faut trouver comment supprimer des superpixels trop petits-> les inclure dans les plus gros mais comment savoir lequel
-#               for row in props[i].coords:
-#                   segments_slic[row[0],row[1]] = -1
-
-
-            
-        # Liaison de click avec la fonction onclick
-        self.fig = plt.figure('segmentation')
-        cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-        
-                
-        #Affichage
-        self.affichage(mark_boundaries(self.img,self.segments_slic))
-
-
-
-    def affichage(self,image):
-        #ligne pour reinitialiser
-        self.obj = plt.imshow(image)
-        plt.show()
 
 
     #fonction qui va permettre de regrouper les superpixels en un plus petit nombre de clusters qui seront facilement coloriable
-    def clustering(self):
+#def clustering(self):
     
 
-    # fonction realisant une série de statistiques sur chaque superpixel
-    def statistiques(self):
+
+        
+
+        
         
 
 #    def original(self):
@@ -199,10 +225,6 @@ class ImgSegmentation:
 #        
 
         
-
-
-
-
 
 
 
