@@ -229,6 +229,6 @@ class ImgSegmentation:
 
 
 if __name__ == "__main__":
-    Im = ImgSegmentation('1.2.foto1a.4000x.tiff')
+    Im = ImgSegmentation('1.2.foto2a.12000x.tiff')
     Im.segmente()
     
