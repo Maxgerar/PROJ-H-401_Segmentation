@@ -1,0 +1,7 @@
+*.pyc
+*.class
+*.com
+*.ddl
+*.exe
+*.o
+*.so
