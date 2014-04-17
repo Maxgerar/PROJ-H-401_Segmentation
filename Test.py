@@ -24,21 +24,21 @@ class ImgSegmentation:
         self.name = fname
         
         #parametre de la segmentation
-        self.segments = 1000; # segmentation assez fine
-        self.compacite = 20.0 # pour avoir des pixels plus ou moins homog, on donne autant de poids a la couleur qu'au caract spatial
-    
+        self.segments = 0; # le nombre de superpixels dependra de la taille du morceau d'image auquel on s'interesse.
+        self.compacite = 20.0 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
     
     def segmente(self):
         
         #lecture de l'image vers un ndarray
         im = imread(self.name)
-        
+        print im.size
         #on filtre pour enlever le bruit et avant d'echantillonner pour eviter le repliement spectral
         #plus le rayon du disque est important plus le lissage est fort
         im = rank.median(im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
-        self.im_red = im[1000:2300:2,1100:3000:2]
+        self.im_red = im[400:3000:2,500:4000:2]
+        self.segments = (self.im_red.size)/550
         
         # slic attend une image rgb il faut donc faire la conversion
         # cette fonction attend egalement des valeurs d'inteniste en float
@@ -61,26 +61,13 @@ class ImgSegmentation:
         #liste qui permettra de stocker les labels des superpixel qui ont ete colore
         self.colored_pixel_label = list()
         
-        #probleme dans la segmentation des superpixels apparamment differents porte le mm label. Demander a Mr debeir
-        
-        #Test pour enlever les superpixel trop petits
-        #voir avec regionprops dans measure de skimage donne les diff area et coord-> elimniation facile !
-        #        for i in range(len(props)):
-        #            if props[i].area <2000:
-        #            #il faut trouver comment supprimer des superpixels trop petits-> les inclure dans les plus gros mais comment savoir lequel
-        #               for row in props[i].coords:
-        #                   segments_slic[row[0],row[1]] = -1
-        
-        
-        
         # Liaison de click avec la fonction onclick
         self.fig = plt.figure('segmentation')
         cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-        
+
         
         #Affichage
-        self.affichage(mark_boundaries(self.img,self.segments_slic))
-    
+        self.affichage(mark_boundaries(self.img,self.segments_slic)) 
     
     
     #fonction a lancer si clic de souris
@@ -229,6 +216,6 @@ class ImgSegmentation:
 
 
 if __name__ == "__main__":
-    Im = ImgSegmentation('1.2.foto2a.12000x.tiff')
+    Im = ImgSegmentation('30.1.foto180b.12000x.TIF')
     Im.segmente()
     
