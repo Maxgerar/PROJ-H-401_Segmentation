@@ -70,15 +70,16 @@ class ImgSegmentation:
 
         #liste pour le k centre initiaux
         self.initial_centers = list()
-
+        #nombre
+        self.iter = 0
 #
 #        # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
 #        self.clustering()
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
-        #cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onmouseclicked)
-        cid2 = self.fig.canvas.mpl_connect('key_press_event', self.on_key)
+        self.cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onmouseclicked)
+        #cid2 = self.fig.canvas.mpl_connect('key_press_event', self.on_key)
 
 
 
@@ -89,26 +90,41 @@ class ImgSegmentation:
             
     # focntion a enclencher au debut pour choisir les centre initiaux du clustering
     def onmouseclicked(self,event):
-        print "centre"
-        #identification du superpixel clique
-        superpixel = self.segments_slic[event.ydata,event.xdata]
+        
+        if self.iter <100 :
+            print "centre"
+            #identification du superpixel clique
+            superpixel = self.segments_slic[event.ydata,event.xdata]
     
-        # ajout du vecteur d'observation correspondant a ce superpixel a la liste des centre initiaux
-        temp = [100*self.props[superpixel-1].centroid[0],100*self.props[superpixel-1].centroid[1],self.props[superpixel-1].mean_intensity,self.mediane(self.props[superpixel-1].coords),self.std_dev(self.props[superpixel-1].coords)]
-        self.initial_centers.append(temp)
+            # ajout du vecteur d'observation correspondant a ce superpixel a la liste des centre initiaux
+            temp = [100*self.props[superpixel-1].centroid[0],100*self.props[superpixel-1].centroid[1],self.props[superpixel-1].mean_intensity,self.mediane(self.props[superpixel-1].coords),self.std_dev(self.props[superpixel-1].coords)]
+            self.initial_centers.append(temp)
+            self.iter = self.iter +1
+            
+            
+        else :
+            # il est temps pour le clustering
+            print "bien"
+            self.clustering()
+            #changement de la fonction liee au click de souris
+            #on deconnecte le fenetre de la premier fonction "mouseclicked"
+            self.fig.canvas.mpl_disconnect(self.cid1)
+            #on la connecte mtn a onclick qui permet le coloriage
+            self.cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+            print "ok"
     
     
-    # fonction a lancer une fois qu'on a selectionne les centre initiaux pour lancer le clustering
-    def on_key(self,event):
-        print "bien"
-#        self.clustering()
-#        
-#        # changement de la fonction liee au click de souris
-#        #on deconnecte le fenetre de la premier fonction "mouseclicked"
-#        self.fig.canvas.mpl_disconnect(cid1)
-#        #on la connecte mtn a onclick qui permet le coloriage
-#        cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-#        print "ok"
+#    # fonction a lancer une fois qu'on a selectionne les centre initiaux pour lancer le clustering
+#    def on_key(self,event):
+#        print "bien"
+##        self.clustering()
+##        
+##        # changement de la fonction liee au click de souris
+##        #on deconnecte le fenetre de la premier fonction "mouseclicked"
+##        self.fig.canvas.mpl_disconnect(cid1)
+##        #on la connecte mtn a onclick qui permet le coloriage
+##        cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+##        print "ok"
 
 
     
@@ -133,13 +149,6 @@ class ImgSegmentation:
         #appliquons le kmeans
         self.initial_centers = np.asarray(self.initial_centers)
         self.result = kmeans2(whitened,self.initial_centers,400,minit='matrix')
-    
-    #recuperons les differents super_superpixels
-    # creeons une liste de megapixels contenant pour chaque mega pixel, l'ensemble des superpixels qui le compose
-    #        megapixels = list[]
-    #        for indice in range(len(self.result[1])):
-    ##
-    ##            print self.result[1][indice]
     
     
     #fonction a lancer si clic de souris
