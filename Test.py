@@ -77,7 +77,7 @@ class ImgSegmentation:
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
-        cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onmouseclicked)
+        #cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onmouseclicked)
         cid2 = self.fig.canvas.mpl_connect('key_press_event', self.on_key)
 
 
@@ -101,14 +101,14 @@ class ImgSegmentation:
     # fonction a lancer une fois qu'on a selectionne les centre initiaux pour lancer le clustering
     def on_key(self,event):
         print "bien"
-        self.clustering()
-        
-        # changement de la fonction liee au click de souris
-        #on deconnecte le fenetre de la premier fonction "mouseclicked"
-        self.fig.canvas.mpl_disconnect(cid1)
-        #on la connecte mtn a onclick qui permet le coloriage
-        cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-        print "ok"
+#        self.clustering()
+#        
+#        # changement de la fonction liee au click de souris
+#        #on deconnecte le fenetre de la premier fonction "mouseclicked"
+#        self.fig.canvas.mpl_disconnect(cid1)
+#        #on la connecte mtn a onclick qui permet le coloriage
+#        cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+#        print "ok"
 
 
     
