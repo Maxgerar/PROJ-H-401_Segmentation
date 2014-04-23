@@ -12,6 +12,7 @@ from skimage.measure import regionprops
 from skimage.morphology import disk
 from skimage.filter import rank
 from skimage.filter import canny
+from skimage.exposure import equalize_hist
 import copy
 from scipy.cluster.vq import whiten,kmeans2
 
@@ -25,20 +26,21 @@ class ImgSegmentation:
         self.name = fname
         
         #parametre de la segmentation
-        self.segments = 0; # le nombre de superpixels dependra de la taille du morceau d'image auquel on s'interesse.
+        #self.segments = 0; # le nombre de superpixels dependra de la taille du morceau d'image auquel on s'interesse.
         self.compacite = 20.0 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
     
     def segmente(self):
         
         #lecture de l'image vers un ndarray. toutes les images fournies ont une taille de 12051000 pixels.
         im = imread(self.name)
-       
+        im = equalize_hist(im)
         #Filtrage median pour enlever le bruit et eviter le repliement spectral en cas d'echantillonnage. Point positif : c'est un filtre qui conserve les bords !!!
         #plus le rayon du disque est important plus le lissage est fort et plus il y a risque de perte d'information, le filtre supprimant les details.
         im = rank.median(im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
-        self.im_red = im[100:5000:2,300:3000:2]
+        self.im_red =  im[600:2300:2,1100:3000:2] #im[::2,::2]
+        #detremination du nombre approximatif de superpixels
         self.segments = (self.im_red.size)/550
         
         
@@ -56,7 +58,7 @@ class ImgSegmentation:
         self.segments_slic = self.segments_slic + np.ones(self.segments_slic.shape,dtype = np.int64)
         
         
-        # liste de proprietes par superpixel
+        # liste de proprietes par superpixel img_temp ou img_red ?
         self.props = regionprops(self.segments_slic,intensity_image = self.im_red)
         
         
@@ -64,21 +66,23 @@ class ImgSegmentation:
         self.regionlabels = list ()
         for elem in self.props:
             self.regionlabels.append(elem.label)
+       
 
         #liste qui permettra de stocker les labels des superpixel qui ont ete colore
         self.colored_pixel_label = list()
 
-        #liste pour le k centre initiaux
-        self.initial_centers = list()
-        #nombre
-        self.iter = 0
-#
-#        # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
-#        self.clustering()
+#        #narray pour le k centre initiaux
+#        self.initial_centers = np.zeros([20,3])
+#        #nombre
+#        self.iter = 0
+
+        # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
+        #self.clustering()
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
-        self.cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onmouseclicked)
+        self.cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        #self.cid1 = self.fig.canvas.mpl_connect('button_press_event', self.onmouseclicked)
         #cid2 = self.fig.canvas.mpl_connect('key_press_event', self.on_key)
 
 
@@ -88,31 +92,33 @@ class ImgSegmentation:
         self.affichage(mark_boundaries(self.img,self.segments_slic))
             
             
-    # focntion a enclencher au debut pour choisir les centre initiaux du clustering
-    def onmouseclicked(self,event):
-        
-        if self.iter <100 :
-            print "centre"
-            #identification du superpixel clique
-            superpixel = self.segments_slic[event.ydata,event.xdata]
-    
-            # ajout du vecteur d'observation correspondant a ce superpixel a la liste des centre initiaux
-            temp = [100*self.props[superpixel-1].centroid[0],100*self.props[superpixel-1].centroid[1],self.props[superpixel-1].mean_intensity,self.mediane(self.props[superpixel-1].coords),self.std_dev(self.props[superpixel-1].coords)]
-            self.initial_centers.append(temp)
-            self.iter = self.iter +1
-            
-            
-        else :
-            # il est temps pour le clustering
-            print "bien"
-            self.clustering()
-            #changement de la fonction liee au click de souris
-            #on deconnecte le fenetre de la premier fonction "mouseclicked"
-            self.fig.canvas.mpl_disconnect(self.cid1)
-            #on la connecte mtn a onclick qui permet le coloriage
-            self.cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-            print "ok"
-    
+#    # focntion a enclencher au debut pour choisir les centre initiaux du clustering
+#    def onmouseclicked(self,event):
+#        
+#        if self.iter <20 :
+#            print "centre"
+#            #identification du superpixel clique
+#            superpixel = self.segments_slic[event.ydata,event.xdata]
+#    
+#            # ajout du vecteur d'observation correspondant a ce superpixel a la liste des centre initiaux
+##            temp = [100*self.props[superpixel-1].centroid[0],100*self.props[superpixel-1].centroid[1],self.props[superpixel-1].mean_intensity,self.mediane(self.props[superpixel-1].coords),self.std_dev(self.props[superpixel-1].coords)]
+#
+#            self.initial_centers[self.iter] = [100000*self.props[superpixel-1].centroid[0],100000*self.props[superpixel-1].centroid[1],self.mediane(self.props[superpixel-1].coords)]
+#            self.iter = self.iter +1
+#            
+#            
+#        else :
+#            # il est temps pour le clustering
+#            print self.initial_centers
+#            print "bien"
+#            self.clustering()
+#            #changement de la fonction liee au click de souris
+#            #on deconnecte le fenetre de la premier fonction "mouseclicked"
+#            self.fig.canvas.mpl_disconnect(self.cid1)
+#            #on la connecte mtn a onclick qui permet le coloriage
+#            self.cid3 = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+#            print "ok"
+
     
 #    # fonction a lancer une fois qu'on a selectionne les centre initiaux pour lancer le clustering
 #    def on_key(self,event):
@@ -134,22 +140,26 @@ class ImgSegmentation:
         
         # essai clustering
         #creation matrice d'observation chaque observation represente un superpixel
-        obs_matrix = np.zeros([len(self.props),5])
+        obs_matrix = np.zeros([len(self.props),3])
         for elem in self.props:
-            obs_matrix[elem.label-1][0] = 100*elem.centroid[0]
-            obs_matrix[elem.label-1][1] = 100*elem.centroid[1]
-            obs_matrix[elem.label-1][2] = elem.mean_intensity
-            obs_matrix[elem.label-1][3] = self.mediane(elem.coords)
-            obs_matrix[elem.label-1][4] = self.std_dev(elem.coords)
+            obs_matrix[(elem.label)-1][0] = 100000*elem.centroid[0]
+            obs_matrix[(elem.label)-1][1] = 100000*elem.centroid[1]
+            #obs_matrix[(elem.label)-1][2] = elem.mean_intensity
+            obs_matrix[(elem.label)-1][2] = self.mediane(elem.coords)
+            #obs_matrix[(elem.label)-1][4] = self.std_dev(elem.coords)
         
         
         #on whiten la matrice avant de lancer le k-means
         whitened = whiten(obs_matrix)
         
         #appliquons le kmeans
-        self.initial_centers = np.asarray(self.initial_centers)
-        self.result = kmeans2(whitened,self.initial_centers,400,minit='matrix')
-    
+        self.result = kmeans2(whitened,len(self.props)/30,1000,minit='points')
+#        #essai avec le choix des centre initiaux
+#        self.result = kmeans2(whitened,self.initial_centers,100)
+
+        #result[1] contient le label du cluster auquel chaque obs (=superpixel) appatient
+        self.clusters = self.result[1]
+     
     
     #fonction a lancer si clic de souris
     def onclick(self,event):
@@ -173,39 +183,30 @@ class ImgSegmentation:
                self.img[row[0],row[1],0]=image[row[0],row[1],0]
                self.img[row[0],row[1],1]=image[row[0],row[1],1]
                self.img[row[0],row[1],2]=image[row[0],row[1],2]
-        else:
-            #identification du megapixel auquel il appartient
-            megapixel = self.result[1][superpixel-1]
-        
-            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
-            for indice in range(len(self.result[1])):
-                if self.result[1][indice]==megapixel:
-                   self.color_superpixel(indice)
-                   self.colored_pixel_label.append(self.props[indice].label)
-#
+#        else:
+#            #identification du megapixel auquel il appartient
+#            megapixel = self.clusters[superpixel-1]
+#        
+#            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
+#            for indice in range(len(self.clusters)):
+#                if self.clusters[indice]==megapixel:
+#                   self.color_superpixel(indice)
+#                   self.colored_pixel_label.append(self.props[indice].label)
+
 
         #sinon on le colorie lui et ses voisins
-#        else:
-#            
-#            #on colorie le pixel clique et on l'indique dans la liste
-#            self.color_superpixel(superpixel-1)
-#            self.colored_pixel_label.append(self.props[superpixel-1].label)
-#            
-##            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
-#
-##            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
-#            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
+        else:
+            
+            #on colorie le pixel clique et on l'indique dans la liste
+            self.color_superpixel(superpixel-1)
+            self.colored_pixel_label.append(self.props[superpixel-1].label)
+            
+#            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
 
-    
-        #affichage des statistiques sur le superpixel clique
-#        print median(self.props[superpixel-1].coords)
-#        print std_dev(self.props[superpixel-1].coords)
-#        print self.props[superpixel-1].label
-#        print self.props[superpixel-1].mean_intensity
-#        print self.mediane(self.props[superpixel-1].coords)
-#        print self.std_dev(self.props[superpixel-1].coords)
-#        print self.props[superpixel-1].centroid
-    
+#            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
+            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
+
+
     
         #on met a jour les changements
         self.obj.set_data(mark_boundaries(self.img,self.segments_slic))
@@ -215,9 +216,10 @@ class ImgSegmentation:
 
 
     #fonction recursive qui va colorier l'elem designe par l'utilisateur et ses voisins qui lui sont suffisamment semblables
-    def color_expand(self,indice,mediane1):
+    def color_expand(self,indice,median):
     
         #param du superpixel dont on etudie le voisinage
+        mediane1 = median
         centre1 = self.props[indice].centroid
         #mediane1 = self.mediane(self.props[indice].coords)
     
