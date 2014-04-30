@@ -35,33 +35,43 @@ class Application (Tkinter.Tk):
     def entrees(self):
         
         Tkinter.Label(self, text = "Nom").grid(row=0)
-        Tkinter.Label(self,text = 'Nombre de superpixel').grid(row = 1)
+        Tkinter.Label(self,text = 'Nombre de superpixels').grid(row = 1)
         Tkinter.Label(self, text = "Compacite").grid(row=2)
         Tkinter.Label(self, text = "Choix de l'image").grid(row=3)
     
-
-        self.nom = Tkinter.Entry(self)
+        self.name = Tkinter.StringVar(self)
+        self.name.set("segmentation")
+        self.nom = Tkinter.Entry(self,textvariable = self.name)
         self.nom.grid(column =1,row =0,sticky = 'E')
 
-        self.compact = Tkinter.Entry(self)
+        self.compactness = Tkinter.StringVar(self)
+        self.compactness.set("20.0")
+        self.compact = Tkinter.Entry(self,textvariable = self.compactness)
         self.compact.grid(column =1,row=2,sticky = 'E')
 
-        self.nombre = Tkinter.Entry(self)
+        self.number = Tkinter.StringVar(self)
+        self.number.set("5500")
+        self.nombre = Tkinter.Entry(self,textvariable = self.number)
         self.nombre.grid(column = 1,row= 1, sticky = 'E')
 
     def bouton(self):
-        self.button = Tkinter.Button(self,text = 'launch')
+        self.button = Tkinter.Button(self,text = 'launch', command = self.onButtonClick)
         self.button.grid(column = 2, row = 4,sticky = 'W')
 
     def menu(self):
         self.options = ["1.2.foto1a.4000x.tiff","1.2.foto2a.12000x.tiff","1.2.foto3a.12000x.TIFF","1.2.foto4b.4000x.TIFF","1.2.foto5b.12000x.TIFF","2.1.foto11b.12000x.TIFF","1.2.foto6b.12000x.TIFF","2.1.foto7a.7000x.TIFF","2.1.foto8a.12000x.TIFF","2.1.foto9a.12000x.TIFF","2.1.foto10b.7000x.TIFF","4.1.foto19a.7000x.TIFF","30.1.foto180b.12000x.TIF","30.1.foto179b.12000x.TIF","30.1.foto177a.12000x.TIF","27.1.foto160b.4000x.TIFF","30.1.foto178b.4000x.TIF"]
         
-        variable = StringVar(self)
-        variable.set(options[0])#valeur par defaut
+        self.variable = Tkinter.StringVar(self)
+        self.variable.set(self.options[0])#valeur par defaut
         
-        self.file = self.apply(OptionMenu, (self,variable)+tuple(options))
+        self.file = apply(Tkinter.OptionMenu, (self,self.variable)+tuple(self.options))
         self.file.pack()
         self.file.grid(column =1,row = 3, sticky = 'E')
+    
+    # quand on a appuye sur launch, on lance l'image et la segmentation
+    def onButtonClick(self):
+        Im = ImgSegmentation(self.variable.get(),self.compactness.get(),self.number.get(),self.name.get())
+        Im.segmente()
 
 
 
@@ -69,15 +79,17 @@ class Application (Tkinter.Tk):
 class ImgSegmentation:
    
     # constructeur
-    def __init__(self,fname):
+    def __init__(self,fname,compactness,number,nomEnregistrement):
         
         #image a charger
         self.name = fname
-        
+        self.enregistrement = nomEnregistrement
         #parametre de la segmentation
-        #self.segments = 0; # le nombre de superpixels dependra de la taille du morceau d'image auquel on s'interesse.
-        self.compacite = 20.0 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
+        self.segments = number
+        print self.segments
+        self.compacite =  compactness # 20 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
     
+        print self.compacite
     def segmente(self):
         
         #lecture de l'image vers un ndarray. toutes les images fournies ont une taille de 12051000 pixels.
@@ -88,10 +100,11 @@ class ImgSegmentation:
         im = rank.median(im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
-        self.im_red =  im[600:2300:2,1100:3000:2] #im[::2,::2]
+        self.im_red =  im[::2,::2] #im[600:2300:2,1100:3000:2] #
         #detremination du nombre approximatif de superpixels
-        self.segments = (self.im_red.size)/550
-        
+#        self.segments = (self.im_red.size)/550
+#        print self.segments
+
         
         # slic attend une image rgb il faut donc faire la conversion
         self.img_temp= gray2rgb(self.im_red)
@@ -360,9 +373,9 @@ class ImgSegmentation:
 
 if __name__ == "__main__":
 
-#    app = Application()
-#    app.title('outil de segmentation')
-#    app.mainloop()
-    Im = ImgSegmentation('1.2.foto1a.4000x.tiff')
-    Im.segmente()
+    app = Application()
+    app.title('outil de segmentation')
+    app.mainloop()
+#    Im = ImgSegmentation('1.2.foto1a.4000x.tiff')
+#    Im.segmente()
 
