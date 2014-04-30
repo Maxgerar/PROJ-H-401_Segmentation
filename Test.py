@@ -15,6 +15,55 @@ from skimage.filter import canny
 from skimage.exposure import equalize_hist
 import copy
 from scipy.cluster.vq import whiten,kmeans2
+import Tkinter
+
+class Application (Tkinter.Tk):
+    #constructeur de la fenetre graph
+    def __init__(self):
+        Tkinter.Tk.__init__(self)
+        #self.parent = parent
+        self.initialize()
+    
+    #permet d'initialiser tous les widgets de l'appli
+    def initialize(self):
+        self.grid()
+        self.entrees()
+        self.bouton()
+        self.menu()
+        self.grid_columnconfigure(0,weight=1)
+
+    def entrees(self):
+        
+        Tkinter.Label(self, text = "Nom").grid(row=0)
+        Tkinter.Label(self,text = 'Nombre de superpixel').grid(row = 1)
+        Tkinter.Label(self, text = "Compacite").grid(row=2)
+        Tkinter.Label(self, text = "Choix de l'image").grid(row=3)
+    
+
+        self.nom = Tkinter.Entry(self)
+        self.nom.grid(column =1,row =0,sticky = 'E')
+
+        self.compact = Tkinter.Entry(self)
+        self.compact.grid(column =1,row=2,sticky = 'E')
+
+        self.nombre = Tkinter.Entry(self)
+        self.nombre.grid(column = 1,row= 1, sticky = 'E')
+
+    def bouton(self):
+        self.button = Tkinter.Button(self,text = 'launch')
+        self.button.grid(column = 2, row = 4,sticky = 'W')
+
+    def menu(self):
+        self.options = ["1.2.foto1a.4000x.tiff","1.2.foto2a.12000x.tiff","1.2.foto3a.12000x.TIFF","1.2.foto4b.4000x.TIFF","1.2.foto5b.12000x.TIFF","2.1.foto11b.12000x.TIFF","1.2.foto6b.12000x.TIFF","2.1.foto7a.7000x.TIFF","2.1.foto8a.12000x.TIFF","2.1.foto9a.12000x.TIFF","2.1.foto10b.7000x.TIFF","4.1.foto19a.7000x.TIFF","30.1.foto180b.12000x.TIF","30.1.foto179b.12000x.TIF","30.1.foto177a.12000x.TIF","27.1.foto160b.4000x.TIFF","30.1.foto178b.4000x.TIF"]
+        
+        variable = StringVar(self)
+        variable.set(options[0])#valeur par defaut
+        
+        self.file = self.apply(OptionMenu, (self,variable)+tuple(options))
+        self.file.pack()
+        self.file.grid(column =1,row = 3, sticky = 'E')
+
+
 
 
 class ImgSegmentation:
@@ -310,6 +359,10 @@ class ImgSegmentation:
 
 
 if __name__ == "__main__":
+
+#    app = Application()
+#    app.title('outil de segmentation')
+#    app.mainloop()
     Im = ImgSegmentation('1.2.foto1a.4000x.tiff')
     Im.segmente()
-    
+
