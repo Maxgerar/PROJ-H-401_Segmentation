@@ -70,7 +70,8 @@ class Application (Tkinter.Tk):
     
     # quand on a appuye sur launch, on lance l'image et la segmentation
     def onButtonClick(self):
-        Im = ImgSegmentation(self.variable.get(),self.compactness.get(),self.number.get(),self.name.get())
+        Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get())
+        #Im = ImgSegmentation(self.variable.get(),self.name.get())
         Im.segmente()
 
 
@@ -80,14 +81,14 @@ class ImgSegmentation:
    
     # constructeur
     def __init__(self,fname,compactness,number,nomEnregistrement):
-        
+        #def __init__(self,fname,nomEnregistrement):
         #image a charger
         self.name = fname
         self.enregistrement = nomEnregistrement
         #parametre de la segmentation
         self.segments = number
-        print self.segments
-        self.compacite =  compactness # 20 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
+        #print self.segments
+        self.compacite = compactness#20 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
     
         print self.compacite
     def segmente(self):
@@ -102,7 +103,7 @@ class ImgSegmentation:
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
         self.im_red =  im[::2,::2] #im[600:2300:2,1100:3000:2] #
         #detremination du nombre approximatif de superpixels
-#        self.segments = (self.im_red.size)/550
+        #self.segments = (self.im_red.size)/550
 #        print self.segments
 
         
@@ -139,7 +140,7 @@ class ImgSegmentation:
 #        self.iter = 0
 
         # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
-        #self.clustering()
+        self.clustering()
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
@@ -245,28 +246,28 @@ class ImgSegmentation:
                self.img[row[0],row[1],0]=image[row[0],row[1],0]
                self.img[row[0],row[1],1]=image[row[0],row[1],1]
                self.img[row[0],row[1],2]=image[row[0],row[1],2]
-#        else:
-#            #identification du megapixel auquel il appartient
-#            megapixel = self.clusters[superpixel-1]
-#        
-#            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
-#            for indice in range(len(self.clusters)):
-#                if self.clusters[indice]==megapixel:
-#                   self.color_superpixel(indice)
-#                   self.colored_pixel_label.append(self.props[indice].label)
-
-
-        #sinon on le colorie lui et ses voisins
         else:
-            
-            #on colorie le pixel clique et on l'indique dans la liste
-            self.color_superpixel(superpixel-1)
-            self.colored_pixel_label.append(self.props[superpixel-1].label)
-            
-#            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+            #identification du megapixel auquel il appartient
+            megapixel = self.clusters[superpixel-1]
+        
+            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
+            for indice in range(len(self.clusters)):
+                if self.clusters[indice]==megapixel:
+                   self.color_superpixel(indice)
+                   self.colored_pixel_label.append(self.props[indice].label)
 
-#            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
-            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
+#
+#        #sinon on le colorie lui et ses voisins
+#        else:
+#            
+#            #on colorie le pixel clique et on l'indique dans la liste
+#            self.color_superpixel(superpixel-1)
+#            self.colored_pixel_label.append(self.props[superpixel-1].label)
+#            
+##            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+#
+##            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
+#            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
 
 
     
