@@ -57,6 +57,9 @@ class Application (Tkinter.Tk):
     def bouton(self):
         self.button = Tkinter.Button(self,text = 'launch', command = self.onButtonClick)
         self.button.grid(column = 2, row = 4,sticky = 'W')
+    
+        self.extract = Tkinter.Button(self,text = 'extract',command = self.onButtonPressed)
+        self.extract.grid(column = 2, row = 6, sticky = 'W')
 
     def menu(self):
         self.options = ["1.2.foto1a.4000x.tiff","1.2.foto2a.12000x.tiff","1.2.foto3a.12000x.TIFF","1.2.foto4b.4000x.TIFF","1.2.foto5b.12000x.TIFF","2.1.foto11b.12000x.TIFF","1.2.foto6b.12000x.TIFF","2.1.foto7a.7000x.TIFF","2.1.foto8a.12000x.TIFF","2.1.foto9a.12000x.TIFF","2.1.foto10b.7000x.TIFF","4.1.foto19a.7000x.TIFF","30.1.foto180b.12000x.TIF","30.1.foto179b.12000x.TIF","30.1.foto177a.12000x.TIF","27.1.foto160b.4000x.TIFF","30.1.foto178b.4000x.TIF"]
@@ -70,9 +73,12 @@ class Application (Tkinter.Tk):
     
     # quand on a appuye sur launch, on lance l'image et la segmentation
     def onButtonClick(self):
-        Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get())
+        self.Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get())
         #Im = ImgSegmentation(self.variable.get(),self.name.get())
-        Im.segmente()
+        self.Im.segmente()
+
+    def onButtonPressed(self):
+        self.Im.extract()
 
 
 
@@ -94,14 +100,14 @@ class ImgSegmentation:
     def segmente(self):
         
         #lecture de l'image vers un ndarray. toutes les images fournies ont une taille de 12051000 pixels.
-        im = imread(self.name)
-        im = equalize_hist(im)
+        self.im = imread(self.name)
+        #self.im = equalize_hist(im)
         #Filtrage median pour enlever le bruit et eviter le repliement spectral en cas d'echantillonnage. Point positif : c'est un filtre qui conserve les bords !!!
         #plus le rayon du disque est important plus le lissage est fort et plus il y a risque de perte d'information, le filtre supprimant les details.
-        im = rank.median(im,disk(8))
+        self.im = rank.median(self.im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
-        self.im_red =  im[::2,::2] #im[600:2300:2,1100:3000:2] #
+        self.im_red =  self.im[::2,::2] #im[600:2300:2,1100:3000:2] #
         #detremination du nombre approximatif de superpixels
         #self.segments = (self.im_red.size)/550
 #        print self.segments
@@ -140,7 +146,7 @@ class ImgSegmentation:
 #        self.iter = 0
 
         # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
-        self.clustering()
+#        self.clustering()
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
@@ -246,28 +252,28 @@ class ImgSegmentation:
                self.img[row[0],row[1],0]=image[row[0],row[1],0]
                self.img[row[0],row[1],1]=image[row[0],row[1],1]
                self.img[row[0],row[1],2]=image[row[0],row[1],2]
-        else:
-            #identification du megapixel auquel il appartient
-            megapixel = self.clusters[superpixel-1]
-        
-            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
-            for indice in range(len(self.clusters)):
-                if self.clusters[indice]==megapixel:
-                   self.color_superpixel(indice)
-                   self.colored_pixel_label.append(self.props[indice].label)
-
-#
-#        #sinon on le colorie lui et ses voisins
 #        else:
-#            
-#            #on colorie le pixel clique et on l'indique dans la liste
-#            self.color_superpixel(superpixel-1)
-#            self.colored_pixel_label.append(self.props[superpixel-1].label)
-#            
-##            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
-#
-##            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
-#            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
+#            #identification du megapixel auquel il appartient
+#            megapixel = self.clusters[superpixel-1]
+#        
+#            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
+#            for indice in range(len(self.clusters)):
+#                if self.clusters[indice]==megapixel:
+#                   self.color_superpixel(indice)
+#                   self.colored_pixel_label.append(self.props[indice].label)
+
+
+        #sinon on le colorie lui et ses voisins
+        else:
+            
+            #on colorie le pixel clique et on l'indique dans la liste
+            self.color_superpixel(superpixel-1)
+            self.colored_pixel_label.append(self.props[superpixel-1].label)
+            
+#            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+
+#            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
+            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
 
 
     
@@ -347,6 +353,25 @@ class ImgSegmentation:
         for row in coords:
             points=np.append(points,self.im_red[row[0],row[1]])
         return np.median(points)
+
+    def extract(self):
+
+        if len(self.colored_pixel_label)==0:
+            print " vous n'avez rien selectionne"
+        
+        else:
+
+            #on creer une matrice vide de la taille de notre image cette taille c'est self.im_red.size
+            self.im_extraction = np.zeros(self.im_red.shape)
+
+            for elem in self.colored_pixel_label:
+                coords = self.props[elem-1].coords
+                for row in coords:
+                    self.im_extraction[row[0],row[1]] = self.im_red[row[0],row[1]]
+
+            self.figfinal = plt.figure('objet extrait')
+            self.obj = plt.imshow(self.im_extraction)
+            plt.show()
 
 
         
