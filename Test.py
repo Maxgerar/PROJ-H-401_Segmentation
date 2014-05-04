@@ -9,7 +9,7 @@ from skimage.util import img_as_float
 from skimage.io import imread
 from skimage.color import gray2rgb
 from skimage.measure import regionprops
-from skimage.morphology import disk
+from skimage.morphology import disk,remove_small_objects
 from skimage.filter import rank
 from skimage.filter import canny
 from skimage.exposure import equalize_hist
@@ -23,16 +23,15 @@ import Tkinter
 class Application (Tkinter.Tk):
     #constructeur de la fenetre graph
     def __init__(self):
+        #appel du constructeur de la classe mere
         Tkinter.Tk.__init__(self)
-        self.initialize()
-    
-    #permet d'initialiser tous les widgets de l'appli
-    def initialize(self):
+        #initialisation des differents widgets de la fenetre
         self.grid()
         self.entrees()
-        self.bouton()
+        self.boutons()
         self.menu()
         self.grid_columnconfigure(0,weight=1)
+
 
     def entrees(self):
         
@@ -61,7 +60,7 @@ class Application (Tkinter.Tk):
         self.check.pack()
         self.check.grid(column = 1,row = 3, sticky = 'E')
 
-    def bouton(self):
+    def boutons(self):
         self.button = Tkinter.Button(self,text = 'launch', command = self.onButtonClick)
         self.button.grid(column = 3, row = 5,sticky = 'W')
     
@@ -82,7 +81,7 @@ class Application (Tkinter.Tk):
     def onButtonClick(self):
         self.Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get(),self.equalize.get())
         self.Im.segmente()
-
+    #methode a lancer quand on appui sur le bouton extract
     def onButtonPressed(self):
         self.Im.extract()
 
@@ -103,7 +102,7 @@ class ImgSegmentation:
         #variable pour savoir si on fait l'egalisation d'hist
         self.equalizeHist = egalisation
     
-    #la segmentattion automatique de l'image
+    #la segmentation automatique de l'image
     def segmente(self):
         
         #lecture de l'image vers un ndarray. toutes les images fournies ont une taille de 12051000 pixels.
@@ -153,7 +152,7 @@ class ImgSegmentation:
 #        self.iter = 0
 
         # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
-#        self.clustering()
+        self.clustering()
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
@@ -235,6 +234,7 @@ class ImgSegmentation:
 
         #result[1] contient le label du cluster auquel chaque obs (=superpixel) appatient
         self.clusters = self.result[1]
+
      
     
     #fonction a lancer si clic de souris, segmentation reposant sur l'utilisateur
@@ -259,28 +259,31 @@ class ImgSegmentation:
                self.img[row[0],row[1],0]=image[row[0],row[1],0]
                self.img[row[0],row[1],1]=image[row[0],row[1],1]
                self.img[row[0],row[1],2]=image[row[0],row[1],2]
-#        else:
-#            #identification du megapixel auquel il appartient
-#            megapixel = self.clusters[superpixel-1]
-#        
-#            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question
-#            for indice in range(len(self.clusters)):
-#                if self.clusters[indice]==megapixel:
-#                   self.color_superpixel(indice)
-#                   self.colored_pixel_label.append(self.props[indice].label)
-
-
-        #sinon on le colorie lui et ses voisins
         else:
-            
-            #on colorie le pixel clique et on l'indique dans la liste
-            self.color_superpixel(superpixel-1)
-            self.colored_pixel_label.append(self.props[superpixel-1].label)
-            
-#            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+            #identification du megapixel auquel il appartient
+            megapixel = self.clusters[superpixel-1]
+            #centre_click = self.props[superpixel-1].centroid
+        
+            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question si assez proches du superpixel clicke
+            for indice in range(len(self.clusters)):
+                #centre = self.props[indice].centroid
+                #distance = math.sqrt(((centre_click[0]-centre[0])**2)+((centre_click[1]-centre[1])**2))
+                if self.clusters[indice]==megapixel: #and distance <= 40:
+                   self.color_superpixel(indice)
+                   self.colored_pixel_label.append(self.props[indice].label)
+        #self.color_expand(indice,self.mediane(self.props[indice].coords))
 
-#            #self.color_expand(self.props[superpixel-1].centroid,self.mediane(self.props[superpixel-1].coords))
-            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
+
+
+#        #sinon on le colorie lui et ses voisins
+#        else:
+#            
+#            #on colorie le pixel clique et on l'indique dans la liste
+#            self.color_superpixel(superpixel-1)
+#            self.colored_pixel_label.append(self.props[superpixel-1].label)
+#            
+##            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+#            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
 
 
     
@@ -382,27 +385,6 @@ class ImgSegmentation:
         return np.median(points)
 
 
-
-
-        
-
-#    def original(self):
-#        #lecture de l'image vers un ndarray
-#        im = imread(self.name)
-#        
-#        self.fig,ax = plt.subplots()
-#        self.obj = plt.imshow(im,cmap =cm.gray)
-#
-#        axes = plt.axes([0.7, 0, 0.1, 0.055])
-#        button = Button(axes, 'Segmente')
-#        button.on_clicked(self.reaction)
-#        plt.show()
-#        
-#
-#    def reaction(self,event):
-#        self.segmente()
-#        
-
         
 
 
@@ -412,6 +394,5 @@ if __name__ == "__main__":
     app = Application()
     app.title('outil de segmentation')
     app.mainloop()
-#    Im = ImgSegmentation('1.2.foto1a.4000x.tiff')
-#    Im.segmente()
+
 
