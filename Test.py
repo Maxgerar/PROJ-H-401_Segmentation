@@ -17,11 +17,13 @@ import copy
 from scipy.cluster.vq import whiten,kmeans2
 import Tkinter
 
+#interface utilisateur
+#elle permet a l'utilisateur de fixer les paramtres de la segmentation, de choisir l'image sur laquelle travailler et de choisir un nom #pour l'enrgistrement du fichier
+
 class Application (Tkinter.Tk):
     #constructeur de la fenetre graph
     def __init__(self):
         Tkinter.Tk.__init__(self)
-        #self.parent = parent
         self.initialize()
     
     #permet d'initialiser tous les widgets de l'appli
@@ -37,7 +39,7 @@ class Application (Tkinter.Tk):
         Tkinter.Label(self, text = "Nom").grid(row=0)
         Tkinter.Label(self,text = 'Nombre de superpixels').grid(row = 1)
         Tkinter.Label(self, text = "Compacite").grid(row=2)
-        Tkinter.Label(self, text = "Choix de l'image").grid(row=3)
+        Tkinter.Label(self, text = "Choix de l'image").grid(row=4)
     
         self.name = Tkinter.StringVar(self)
         self.name.set("segmentation")
@@ -53,13 +55,18 @@ class Application (Tkinter.Tk):
         self.number.set("5500")
         self.nombre = Tkinter.Entry(self,textvariable = self.number)
         self.nombre.grid(column = 1,row= 1, sticky = 'E')
+    
+        self.equalize = Tkinter.IntVar()
+        self.check = Tkinter.Checkbutton(self,text = " egalisation d'histograme",variable = self.equalize)
+        self.check.pack()
+        self.check.grid(column = 1,row = 3, sticky = 'E')
 
     def bouton(self):
         self.button = Tkinter.Button(self,text = 'launch', command = self.onButtonClick)
-        self.button.grid(column = 2, row = 4,sticky = 'W')
+        self.button.grid(column = 3, row = 5,sticky = 'W')
     
         self.extract = Tkinter.Button(self,text = 'extract',command = self.onButtonPressed)
-        self.extract.grid(column = 2, row = 6, sticky = 'W')
+        self.extract.grid(column = 3, row = 6, sticky = 'W')
 
     def menu(self):
         self.options = ["1.2.foto1a.4000x.tiff","1.2.foto2a.12000x.tiff","1.2.foto3a.12000x.TIFF","1.2.foto4b.4000x.TIFF","1.2.foto5b.12000x.TIFF","2.1.foto11b.12000x.TIFF","1.2.foto6b.12000x.TIFF","2.1.foto7a.7000x.TIFF","2.1.foto8a.12000x.TIFF","2.1.foto9a.12000x.TIFF","2.1.foto10b.7000x.TIFF","4.1.foto19a.7000x.TIFF","30.1.foto180b.12000x.TIF","30.1.foto179b.12000x.TIF","30.1.foto177a.12000x.TIF","27.1.foto160b.4000x.TIFF","30.1.foto178b.4000x.TIF"]
@@ -69,48 +76,48 @@ class Application (Tkinter.Tk):
         
         self.file = apply(Tkinter.OptionMenu, (self,self.variable)+tuple(self.options))
         self.file.pack()
-        self.file.grid(column =1,row = 3, sticky = 'E')
+        self.file.grid(column =1,row = 4, sticky = 'E')
     
     # quand on a appuye sur launch, on lance l'image et la segmentation
     def onButtonClick(self):
-        self.Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get())
-        #Im = ImgSegmentation(self.variable.get(),self.name.get())
+        self.Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get(),self.equalize.get())
         self.Im.segmente()
 
     def onButtonPressed(self):
         self.Im.extract()
 
 
-
+#classe realisant le traitement de l'image
 
 class ImgSegmentation:
    
     # constructeur
-    def __init__(self,fname,compactness,number,nomEnregistrement):
-        #def __init__(self,fname,nomEnregistrement):
+    def __init__(self,fname,compactness,number,nomEnregistrement,egalisation):
         #image a charger
         self.name = fname
+        #nom pour l'enregistrement du fichier
         self.enregistrement = nomEnregistrement
         #parametre de la segmentation
         self.segments = number
-        #print self.segments
-        self.compacite = compactness#20 # pour avoir des pixels plus ou moins homog et de forme plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract                #spatial
+        self.compacite = compactness # on conseille la valeur par defaut de 20 pour avoir des pixels plus ou moins homog et de forme  #plus ou moins reguliere, on donne un tout petit peu plus d'importance au caract spatial
+        #variable pour savoir si on fait l'egalisation d'hist
+        self.equalizeHist = egalisation
     
-        print self.compacite
+    #la segmentattion automatique de l'image
     def segmente(self):
         
         #lecture de l'image vers un ndarray. toutes les images fournies ont une taille de 12051000 pixels.
         self.im = imread(self.name)
-        #self.im = equalize_hist(im)
+        
+        if self.equalizeHist == 1:
+            self.im = equalize_hist(self.im)
+        
         #Filtrage median pour enlever le bruit et eviter le repliement spectral en cas d'echantillonnage. Point positif : c'est un filtre qui conserve les bords !!!
         #plus le rayon du disque est important plus le lissage est fort et plus il y a risque de perte d'information, le filtre supprimant les details.
         self.im = rank.median(self.im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale
         self.im_red =  self.im[::2,::2] #im[600:2300:2,1100:3000:2] #
-        #detremination du nombre approximatif de superpixels
-        #self.segments = (self.im_red.size)/550
-#        print self.segments
 
         
         # slic attend une image rgb il faut donc faire la conversion
@@ -119,7 +126,7 @@ class ImgSegmentation:
         # cette fonction attend egalement des valeurs d'intensite en float
         self.img = img_as_float(self.img_temp)
         
-        #segmentation en superpixel, fonction slic de skimage.segmentation
+        #segmentation en superpixel, fonction slic de skimage.segmentation, le parametre sigma prend la std dev d'un filtre gaussien applique a l'image avant de la segmenter
         self.segments_slic = slic(self.img,n_segments = self.segments,compactness = self.compacite, sigma =1)
         
 
@@ -230,7 +237,7 @@ class ImgSegmentation:
         self.clusters = self.result[1]
      
     
-    #fonction a lancer si clic de souris
+    #fonction a lancer si clic de souris, segmentation reposant sur l'utilisateur
     def onclick(self,event):
 
         
@@ -320,6 +327,28 @@ class ImgSegmentation:
                         self.color_expand(elem-1,mediane1)
 
 
+    # fonction permettant d'afficher l'element d'interet seul
+    def extract(self):
+
+        if len(self.colored_pixel_label)==0:
+            print " vous n'avez rien selectionne"
+
+        else:
+    
+        #on creer une matrice vide de la taille de notre image cette taille c'est self.im_red.size
+            self.im_extraction = np.ones(self.img.shape)
+            image = img_as_float(self.img_temp)
+            for elem in self.colored_pixel_label:
+                coords = self.props[elem-1].coords
+                for row in coords:
+                    self.im_extraction[row[0],row[1],0]=image[row[0],row[1],0]
+                    self.im_extraction[row[0],row[1],1]=image[row[0],row[1],1]
+                    self.im_extraction[row[0],row[1],2]=image[row[0],row[1],2]
+    
+            self.figfinal = plt.figure('objet extrait :'+ 'self.enregistrement')
+            self.affichage(self.im_extraction)
+
+
 
 
 
@@ -327,8 +356,6 @@ class ImgSegmentation:
         #ligne pour reinitialiser
         self.obj = plt.imshow(image)
         plt.show()
-    
-
     
     
     #fonction permettant de colorer un superpixel
@@ -354,24 +381,7 @@ class ImgSegmentation:
             points=np.append(points,self.im_red[row[0],row[1]])
         return np.median(points)
 
-    def extract(self):
 
-        if len(self.colored_pixel_label)==0:
-            print " vous n'avez rien selectionne"
-        
-        else:
-
-            #on creer une matrice vide de la taille de notre image cette taille c'est self.im_red.size
-            self.im_extraction = np.zeros(self.im_red.shape)
-
-            for elem in self.colored_pixel_label:
-                coords = self.props[elem-1].coords
-                for row in coords:
-                    self.im_extraction[row[0],row[1]] = self.im_red[row[0],row[1]]
-
-            self.figfinal = plt.figure('objet extrait')
-            self.obj = plt.imshow(self.im_extraction)
-            plt.show()
 
 
         
