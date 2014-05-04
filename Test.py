@@ -152,7 +152,7 @@ class ImgSegmentation:
 #        self.iter = 0
 
         # appliquons maintenant un deuxieme clustering sur ces superpixels base sur leurs proprietes
-        self.clustering()
+        #self.clustering()
 
         # Liaison de click avec la fonction onclick et des evenements clavier
         self.fig = plt.figure('segmentation')
@@ -259,31 +259,31 @@ class ImgSegmentation:
                self.img[row[0],row[1],0]=image[row[0],row[1],0]
                self.img[row[0],row[1],1]=image[row[0],row[1],1]
                self.img[row[0],row[1],2]=image[row[0],row[1],2]
-        else:
-            #identification du megapixel auquel il appartient
-            megapixel = self.clusters[superpixel-1]
-            #centre_click = self.props[superpixel-1].centroid
-        
-            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question si assez proches du superpixel clicke
-            for indice in range(len(self.clusters)):
-                #centre = self.props[indice].centroid
-                #distance = math.sqrt(((centre_click[0]-centre[0])**2)+((centre_click[1]-centre[1])**2))
-                if self.clusters[indice]==megapixel: #and distance <= 40:
-                   self.color_superpixel(indice)
-                   self.colored_pixel_label.append(self.props[indice].label)
-        #self.color_expand(indice,self.mediane(self.props[indice].coords))
-
-
-
-#        #sinon on le colorie lui et ses voisins
 #        else:
-#            
-#            #on colorie le pixel clique et on l'indique dans la liste
-#            self.color_superpixel(superpixel-1)
-#            self.colored_pixel_label.append(self.props[superpixel-1].label)
-#            
-##            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
-#            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
+#            #identification du megapixel auquel il appartient
+#            megapixel = self.clusters[superpixel-1]
+#            #centre_click = self.props[superpixel-1].centroid
+#        
+#            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question si assez proches du superpixel clicke
+#            for indice in range(len(self.clusters)):
+#                #centre = self.props[indice].centroid
+#                #distance = math.sqrt(((centre_click[0]-centre[0])**2)+((centre_click[1]-centre[1])**2))
+#                if self.clusters[indice]==megapixel: #and distance <= 40:
+#                   self.color_superpixel(indice)
+#                   self.colored_pixel_label.append(self.props[indice].label)
+#        #self.color_expand(indice,self.mediane(self.props[indice].coords))
+
+
+
+        #sinon on le colorie lui et ses voisins
+        else:
+            
+            #on colorie le pixel clique et on l'indique dans la liste
+            self.color_superpixel(superpixel-1)
+            self.colored_pixel_label.append(self.props[superpixel-1].label)
+            
+#            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
+            self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
 
 
     
