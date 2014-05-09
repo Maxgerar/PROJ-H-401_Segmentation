@@ -147,7 +147,7 @@ class ImgSegmentation:
         #on doit avoir tous les indices sup a 0 pour region props donc on les augmente tous de 1
         self.segments_slic = self.segments_slic + np.ones(self.segments_slic.shape,dtype = np.int64)
         
-        # liste de proprietes par superpixel 
+        # liste de proprietes par superpixel
         self.props = regionprops(self.segments_slic, intensity_image = self.im_red)
         
         # on cree la matrice d'adjacence
@@ -433,7 +433,7 @@ class ImgSegmentation:
                     self.im_extraction[row[0],row[1],1]=image[row[0],row[1],1]
                     self.im_extraction[row[0],row[1],2]=image[row[0],row[1],2]
     
-            self.figfinal = plt.figure('objet extrait :'+ 'self.enregistrement')
+            self.figfinal = plt.figure('objet extrait :'+ self.enregistrement)
             self.affichage(self.im_extraction)
 
 
