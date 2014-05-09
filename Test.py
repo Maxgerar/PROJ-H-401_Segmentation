@@ -147,17 +147,12 @@ class ImgSegmentation:
         #on doit avoir tous les indices sup a 0 pour region props donc on les augmente tous de 1
         self.segments_slic = self.segments_slic + np.ones(self.segments_slic.shape,dtype = np.int64)
         
-        # liste de proprietes par superpixel img_temp ou img_red ?
+        # liste de proprietes par superpixel 
         self.props = regionprops(self.segments_slic, intensity_image = self.im_red)
         
-        # on cree la matrice d'ajancement
+        # on cree la matrice d'adjacence
         self.create_neighbour_matrix()
-        
-        #on creer une liste contenant tout les labels des superpixels
-        self.regionlabels = list ()
-        for elem in self.props:
-            self.regionlabels.append(elem.label)
-       
+
 
         #liste qui permettra de stocker les labels des superpixel qui ont ete colore
         self.colored_pixel_label = list()
@@ -174,27 +169,27 @@ class ImgSegmentation:
         #Affichage
         self.affichage(mark_boundaries(self.img,self.segments_slic))
 
-    def clustering(self):
-    
-        # essai clustering
-        #creation matrice d'observation chaque observation represente un superpixel
-        obs_matrix = np.zeros([len(self.props),3])
-        for elem in self.props:
-            obs_matrix[(elem.label)-1][0] = 100000*elem.centroid[0]
-            obs_matrix[(elem.label)-1][1] = 100000*elem.centroid[1]
-            obs_matrix[(elem.label)-1][2] = self.mediane(elem.coords)
-    
-    
-    
-        #on whiten la matrice avant de lancer le k-means
-        whitened = whiten(obs_matrix)
-    
-        #appliquons le kmeans
-        self.result = kmeans2(whitened,len(self.props)/30,1000,minit='points')
-    
-        #result[1] contient le label du cluster auquel chaque obs (=superpixel) appatient
-        self.clusters = self.result[1]
-        
+#    def clustering(self):
+#    
+#        # essai clustering
+#        #creation matrice d'observation chaque observation represente un superpixel
+#        obs_matrix = np.zeros([len(self.props),3])
+#        for elem in self.props:
+#            obs_matrix[(elem.label)-1][0] = 100000*elem.centroid[0]
+#            obs_matrix[(elem.label)-1][1] = 100000*elem.centroid[1]
+#            obs_matrix[(elem.label)-1][2] = self.mediane(elem.coords)
+#    
+#    
+#    
+#        #on whiten la matrice avant de lancer le k-means
+#        whitened = whiten(obs_matrix)
+#    
+#        #appliquons le kmeans
+#        self.result = kmeans2(whitened,len(self.props)/30,1000,minit='points')
+#    
+#        #result[1] contient le label du cluster auquel chaque obs (=superpixel) appatient
+#        self.clusters = self.result[1]
+
         
         
         #fonction a lancer si clic de souris, segmentation reposant sur l'utilisateur
@@ -219,20 +214,20 @@ class ImgSegmentation:
                 self.img[row[0],row[1],0]=image[row[0],row[1],0]
                 self.img[row[0],row[1],1]=image[row[0],row[1],1]
                 self.img[row[0],row[1],2]=image[row[0],row[1],2]
-            #       else:
-            #           #identification du megapixel auquel il appartient
-            #           megapixel = self.clusters[superpixel-1]
-                        #centre_click = self.props[superpixel-1].centroid
-            #
-            #           #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question si assez proches du superpixel clicke
-            #           for indice in range(len(self.clusters)):
-            #               #centre = self.props[indice].centroid
-            #               #distance = math.sqrt(((centre_click[0]-centre[0])**2)+((centre_click[1]-centre[1])**2))
-            #               if self.clusters[indice]==megapixel: #and distance <= 40:
-            #                  self.color_superpixel(indice)
-            #                  self.colored_pixel_label.append(self.props[indice].label)
-            #       #self.color_expand(indice,self.mediane(self.props[indice].coords))
-            
+                    
+#        else:
+#            #identification du megapixel auquel il appartient
+#            megapixel = self.clusters[superpixel-1]
+#            
+#            #identification des superpixels appartenant a celui-ci et coloriage des superpixels en question si assez proches du superpixel clicke
+#            for indice in range(len(self.clusters)):
+#                #centre = self.props[indice].centroid
+#                #distance = math.sqrt(((centre_click[0]-centre[0])**2)+((centre_click[1]-centre[1])**2))
+#                if self.clusters[indice]==megapixel: #and distance <= 40:
+#                   self.color_superpixel(indice)
+#                   self.colored_pixel_label.append(self.props[indice].label)
+#                   #self.color_expand(indice,self.mediane(self.props[indice].coords))
+
             
             
             #sinon on le colorie lui et ses voisins
@@ -244,7 +239,7 @@ class ImgSegmentation:
                 
             #            #fonction permettant de colorier les superpixels semblables appartenant a l'elem designe par l'utilisateur
             self.color_expand(superpixel-1,self.mediane(self.props[superpixel-1].coords))
-            
+
             
             
         #on met a jour les changements
@@ -316,6 +311,7 @@ class ImgSegmentation:
 
 
     def partitioning(self):
+        self.clean_colored_pixel()
         self.superpixel_dbscan(12)
         
         #figure pour montrer l'effet du clustering
@@ -323,6 +319,16 @@ class ImgSegmentation:
         self.cid2 = self.fig_cluster.canvas.mpl_connect('button_press_event', self.onmouseclicked)
         self.affichage(mark_boundaries(self.img,self.clusterized))
 
+    def clean_colored_pixel(self):
+        image = img_as_float(self.img_temp)
+        for elem in self.colored_pixel_label:
+            #on decolorie l'elem
+            for row in self.props[elem-1].coords:
+                self.img[row[0],row[1],0]=image[row[0],row[1],0]
+                self.img[row[0],row[1],1]=image[row[0],row[1],1]
+                self.img[row[0],row[1],2]=image[row[0],row[1],2]
+            # et on le retire de la liste
+            self.colored_pixel_label.remove(self.props[elem-1].label)
 
 
 
@@ -393,15 +399,17 @@ class ImgSegmentation:
                if diff <=eps:
                   list_of_neighbours.append(column+1)
         return list_of_neighbours
-
+    
+    
+    # fonction a lancer suite a un clique de souris dans la fenetre du clustering dbscan
     def onmouseclicked(self,event):
         #identification du cluster pointe par l'utilisateur
         n_cluster = self.clusterized[event.ydata,event.xdata]
         #recuperation des indices de superpixels formant ce cluster
-        list_superpix = self.C[n_cluster-1]
-        #on les colorie
-        for elem in list_superpix:
-            self.color_superpixel(elem-1)
+        for i in range (len(self.regionsC)):
+            if self.regionsC[i]==n_cluster:
+               self.color_superpixel(i)
+               self.colored_pixel_label.append(i+1)
         
         #mise a jour des changement
         self.obj.set_data(mark_boundaries(self.img,self.clusterized))
@@ -461,40 +469,6 @@ class ImgSegmentation:
         return np.median(points)
 
 
-#    #fonction recursive qui va colorier l'elem designe par l'utilisateur et ses voisins qui lui sont suffisamment semblables
-#    def color_expand(self,indice,median):
-#
-#        #param du superpixel dont on etudie le voisinage
-#        mediane1 = median
-#        centre1 = self.props[indice].centroid
-#        #mediane1 = self.mediane(self.props[indice].coords)
-#
-#        #comparaison avec les autres superpixels de liste. liste est la liste des labels de superpixels concernes.
-#        for elem in self.regionlabels:
-#
-#            if elem not in self.colored_pixel_label:
-#
-#                #calcul de distance entre les centroides des superpixels
-#                centre2 = self.props[elem-1].centroid #le centre "mobile"
-#                distance = math.sqrt(((centre1[0]-centre2[0])**2)+((centre1[1]-centre2[1])**2))
-#
-#                # Test pour savoir si les superpixels sont voisins
-#                if distance <=30:
-#
-#                    #maintenant on test la similarite en intensite via les mediane de distrib d'intensite des superpixels
-#
-#                    mediane2 = self.mediane(self.props[elem-1].coords)
-#                    diff = math.fabs(mediane1-mediane2)
-#
-#                    if diff <=12:
-#                        #on colorie le superpixel teste
-#                        self.color_superpixel(elem-1)
-#                        #on indique dans une liste qu'on a colorie ce superpixel
-#                        self.colored_pixel_label.append(elem)
-#
-#                        #recursivite
-#                        mediane1 = (mediane1+mediane2)/2
-#                        self.color_expand(elem-1,mediane1)
 
 
 
