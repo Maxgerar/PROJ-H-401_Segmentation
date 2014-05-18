@@ -133,7 +133,7 @@ class ImgSegmentation:
         self.im = rank.median(self.im,disk(8))
         
         #on reduit l'image pour diminuer le temps de computation. On ne s'interesse qu'a certaines parties de l'image plus echantillonnage. C'est l'image grayscale. On diminue par deux le nombre de pixels contenu dans l'image.
-        self.im_red = self.im[::2,::2] #self.im[1000:2300:2,1500:3000:2] #self.im[::2,::2] # #
+        self.im_red = self.im[::2,::2] 
 
         
         # slic attend une image rgb il faut donc faire la conversion
@@ -254,6 +254,7 @@ class ImgSegmentation:
     def color_expand(self,indice,median):
         #param du superpixel dont on etudie le voisinage
         mediane1 = median
+
         # on cherche dans ces voisins
         for column in range(len(self.props)):
             # si c'est un voisin et qu'il n'a pas encore ete colorie
@@ -273,7 +274,7 @@ class ImgSegmentation:
                     #recursivite
                     mediane1 = (mediane1+mediane2)/2
                     self.color_expand(column,mediane1)
-        
+
 
 
 
@@ -306,8 +307,6 @@ class ImgSegmentation:
                             if self.segments_slic[row-1,column] != self.segments_slic[row+1,column]:
                                 self.neighbourhood_matrix[self.segments_slic[row-1,column]-1,self.segments_slic[row+1,column]-1]=1
                                 self.neighbourhood_matrix[self.segments_slic[row+1,column]-1,self.segments_slic[row-1,column]-1]=1
-
-
 
 
 
