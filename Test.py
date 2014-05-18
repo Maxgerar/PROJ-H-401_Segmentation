@@ -31,8 +31,8 @@ class Application (Tkinter.Tk):
         self.boutons()
         self.menu()
         self.grid_columnconfigure(0,weight=1)
-
-
+            
+    #champs de textes et labels
     def entrees(self):
         
         Tkinter.Label(self, text = "Nom").grid(row=0)
@@ -59,7 +59,7 @@ class Application (Tkinter.Tk):
         self.check = Tkinter.Checkbutton(self,text = " egalisation d'histograme",variable = self.equalize)
         self.check.pack()
         self.check.grid(column = 1,row = 3, sticky = 'E')
-
+    #boutons
     def boutons(self):
         self.button = Tkinter.Button(self,text = 'launch', command = self.onButtonClick)
         self.button.grid(column = 3, row = 5,sticky = 'W')
@@ -69,9 +69,10 @@ class Application (Tkinter.Tk):
     
         self.clustering =Tkinter.Button(self,text = 'clustering',command = self.onButtonDrop)
         self.clustering.grid(column = 3, row = 6, sticky = 'W')
-
+    
+    #menu deroulant
     def menu(self):
-        self.options = ["1.2.foto1a.4000x.tiff","1.2.foto2a.12000x.tiff","1.2.foto3a.12000x.TIFF","1.2.foto4b.4000x.TIFF","1.2.foto5b.12000x.TIFF","2.1.foto11b.12000x.TIFF","1.2.foto6b.12000x.TIFF","2.1.foto7a.7000x.TIFF","2.1.foto8a.12000x.TIFF","2.1.foto9a.12000x.TIFF","2.1.foto10b.7000x.TIFF","4.1.foto19a.7000x.TIFF","30.1.foto180b.12000x.TIF","30.1.foto179b.12000x.TIF","30.1.foto177a.12000x.TIF","27.1.foto160b.4000x.TIFF","30.1.foto178b.4000x.TIF"]
+        self.options = ["1.2.foto1a.4000x.tiff","1.2.foto2a.12000x.tiff","1.2.foto3a.12000x.TIFF","1.2.foto4b.4000x.TIFF","1.2.foto5b.12000x.TIFF","2.1.foto11b.12000x.TIFF","1.2.foto6b.12000x.TIFF","2.1.foto7a.7000x.TIFF","2.1.foto8a.12000x.TIFF","2.1.foto9a.12000x.TIFF","2.1.foto10b.7000x.TIFF","4.1.foto19a.7000x.TIFF","30.1.foto180b.12000x.TIF","30.1.foto179b.12000x.TIF","30.1.foto177a.12000x.TIF","27.1.foto160b.4000x.TIFF","30.1.foto178b.4000x.TIF","3.1.foto14a.12000x.TIFF","3.1.foto15a.12000x.TIFF","3.1.foto16b.4000x.TIFF","3.1.foto17b.12000x.TIFF","3.1.foto18b.12000x.TIFF","5.1.foto25a.7000x.TIFF","5.1.foto27a.12000x.TIFF","7.1.foto38a.12000x.TIFF","8.1.foto44a.12000x.TIFF","9.1.foto53b.12000x.TIFF","11.1.foto65b.12000x.TIFF","13.1.foto77b.12000x.TIFF","14.1.foto81a.12000x.TIFF","16.1.foto92a.12000x.TIFF","17.1.foto101b.12000x.TIFF","19.1.foto114b.12000x.TIFF","21.1.foto125b.12000x.TIFF","23.1.foto135a.12000x.TIFF","25.1.foto148b.7000x.TIFF","26.1.foto152a.12000x.TIFF","26.1.foto153a.12000x.TIFF","27.1.foto161b.12000x.TIFF"]
         
         self.variable = Tkinter.StringVar(self)
         self.variable.set(self.options[0])#valeur par defaut
@@ -84,6 +85,7 @@ class Application (Tkinter.Tk):
     def onButtonClick(self):
         self.Im = ImgSegmentation(self.variable.get(),float(self.compactness.get()),int(self.number.get()),self.name.get(),self.equalize.get())
         self.Im.segmente()
+    
     #methode a lancer quand on appui sur le bouton extract
     def onButtonPressed(self):
         self.Im.extract()
@@ -316,18 +318,20 @@ class ImgSegmentation:
         
         #figure pour montrer l'effet du clustering
         self.fig_cluster = plt.figure('segmentation et clustering')
+        #on y lie la fonction qui permet de faire le coloriage
         self.cid2 = self.fig_cluster.canvas.mpl_connect('button_press_event', self.onmouseclicked)
+        
         self.affichage(mark_boundaries(self.img,self.clusterized))
 
     def clean_colored_pixel(self):
-        image = img_as_float(self.img_temp)
+        self.img = img_as_float(self.img_temp)
         for elem in self.colored_pixel_label:
-            #on decolorie l'elem
-            for row in self.props[elem-1].coords:
-                self.img[row[0],row[1],0]=image[row[0],row[1],0]
-                self.img[row[0],row[1],1]=image[row[0],row[1],1]
-                self.img[row[0],row[1],2]=image[row[0],row[1],2]
-            # et on le retire de la liste
+#            #on decolorie l'elem
+#            for row in self.props[elem-1].coords:
+#                self.img[row[0],row[1],0]=image[row[0],row[1],0]
+#                self.img[row[0],row[1],1]=image[row[0],row[1],1]
+#                self.img[row[0],row[1],2]=image[row[0],row[1],2]
+#            # et on le retire de la liste
             self.colored_pixel_label.remove(self.props[elem-1].label)
 
 
@@ -390,10 +394,10 @@ class ImgSegmentation:
     #permet de trouver les voisins au sens de eps du superpixel d'indice ind_superpixel et renvoie cette liste
     def find_neighbours_eps(self,ind_superpixel,eps):
         list_of_neighbours = list()
+        mediane1 = self.mediane(self.props[ind_superpixel].coords)
     #on parcout le ligne correspondant au superpixel dans la matrice d'adjacence
         for column in range(len(self.props)):
             if self.neighbourhood_matrix[ind_superpixel,column]==1 and (column+1) not in self.visited_superpixel_list :
-               mediane1 = self.mediane(self.props[ind_superpixel].coords)
                mediane2 = self.mediane(self.props[column].coords)
                diff = math.fabs(mediane1-mediane2)
                if diff <=eps:
